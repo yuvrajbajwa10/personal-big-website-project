@@ -19,13 +19,25 @@ class Board extends React.Component {
 
   constructor(props) {
     super(props);
-    this.count = 0;
+    this.count = 25;
     this.listOfColors =  ['#3369e8', '#009925', '#eeb211', '#d50f25']
     this.handleClick = this.handleClick.bind(this);
+    this.spin = this.spin.bind(this);
+    this.currentrotation = 0;
+    this.speed = 1000; // slow 
+  }
+  handlerotation(delta)
+  {
+    this.currentrotation = this.currentrotation + delta > 6.28 ? this.currentrotation + delta - 6.28: this.currentrotation + delta;
   }
   handleClick() {
     this.count ++;
     this.drawpie();
+  }
+  spin()
+  {
+    this.speed = 15;
+    this.handlerotation(Math.PI / this.speed);
   }
   //draw pie
   // important
@@ -43,8 +55,10 @@ class Board extends React.Component {
     ctx.textAlign = "centre";
     ctx.textBaseline = "middle";
     // clean board 
-    ctx.clearRect(-500, -500, 500, 500);
-
+    ctx.save()
+    ctx.translate(-400,-400)
+    ctx.clearRect(0, 0, 800, 800);
+    ctx.restore();
     // the actual quaters of the circle
     var centre = 0;
     var radius = 370;
@@ -63,40 +77,52 @@ class Board extends React.Component {
     }
     //rotated text
     var anglediff = calculateAngle(this.count, i, 1) - calculateAngle(this.count, i, 0);
-    console.log("angle",anglediff)
     var fontsize = Math.abs(Math.floor(Math.sin(anglediff) * 290) - 3);
-    console.log("font",fontsize)
     ctx.font = fontsize >= 30 || this.count < 3 ? "30px Arial" : fontsize + "px Arial";
     for (i = 0; i < this.count; i++) {
       ctx.fillStyle = 'White';
       angle = calculateAngle(this.count, i, 0) - middleOffset;
       ctx.save();
-      ctx.translate(centre, centre);
+      //ctx.translate(centre, centre);
       ctx.rotate(angle);
       ctx.fillText(i + 1, 290, 0);
       ctx.restore();
       //white Circle in the middle
     }
     drawwhite(c);
+    
+    // draw the thing
+    ctx.save();
+    ctx.rotate(-this.currentrotation);
+    ctx.moveTo(340,0)
+    ctx.arc(325,0,50,-Math.PI/8,Math.PI/8);
+    ctx.closePath();
+    ctx.fillStyle = "light";
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
   }
 
   render(props) {
     return (
       <div>
         <canvas id="WheelSpin" width="750" height="750" onClick={this.handleClick} />
+        <button onClick={this.spin}>Spin the wheel</button>
       </div>
     );
   }
 }
 function rotatepie(ctx, board) {
-  ctx.rotate(Math.PI / 1000);
+  board.speed = board.speed < 1000 ? board.speed + 1 : 1000;
+  ctx.rotate(Math.PI / board.speed);
   board.drawpie();
+  board.handlerotation(Math.PI / board.speed);
 }
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.Board = new Board();
-    //this.Board = <Board one ={1}/>;
   }
   componentDidMount() {
     clearInterval(this.set);
@@ -115,7 +141,8 @@ class App extends React.Component {
     ctx.closePath();
     ctx.fill();
     drawwhite(c);
-    this.set = setInterval(() => rotatepie(ctx, this.Board), 41.6666666667);
+    this.set = setInterval(() => rotatepie(ctx, this.Board), 20);
+    
   }
 
   render() {
