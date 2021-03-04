@@ -24,11 +24,15 @@ class Board extends React.Component {
     this.handleClick = this.handleClick.bind(this);
     this.spin = this.spin.bind(this);
     this.currentrotation = 0;
-    this.speed = 1000; // slow 
-  }
-  handlerotation(delta)
+    this.speed = 1000; // slow
+    this.isStopping = false;
+    this.roationSpeed = Math.PI / this.speed;
+    this.startingStopping = false;
+    this.audio = new Audio("src\pop-4.wav")
+  } 
+  handlerotation()
   {
-    this.currentrotation = this.currentrotation + delta > 6.28 ? this.currentrotation + delta - 6.28: this.currentrotation + delta;
+    this.currentrotation = this.currentrotation + this.roationSpeed > 6.28318 ? this.currentrotation +this.roationSpeed - 6.28318: this.currentrotation + this.roationSpeed;
   }
   handleClick() {
     this.count ++;
@@ -36,8 +40,24 @@ class Board extends React.Component {
   }
   spin()
   {
-    this.speed = 15;
-    this.handlerotation(Math.PI / this.speed);
+    // Set the speed to 15 to 25 randomly
+    this.speed = Math.floor( Math.random() * 25) + 15;
+
+    // Set the speed to 10 to 15 randomly after 0.15 to 0.30 seconds
+    setTimeout(() => {
+      this.speed = Math.floor( Math.random() * 15) + 10;
+    }, Math.floor( Math.random() * 300) + 150);
+    
+    // Set the speed to 20 to 30 randomly after 0.30 to 0.60 seconds
+    setTimeout(() => {
+      this.speed = Math.floor( Math.random() * 30) + 20;
+    }, Math.floor( Math.random() * 600) + 300);
+    // set is stopping to true
+    this.isStopping = true;
+    setTimeout(() => {
+      // turn on the brakes after 2 to 4 seconds
+      this.startingStopping =true;
+    },(Math.floor(Math.random() * 3) + 2 + Math.random() )* 1000);//Stopping Speed is min 2 and max 4 seconds stopping time
   }
   //draw pie
   // important
@@ -91,7 +111,7 @@ class Board extends React.Component {
     }
     drawwhite(c);
     
-    // draw the thing
+    // draw the triangle
     ctx.save();
     ctx.rotate(-this.currentrotation);
     ctx.moveTo(340,0)
@@ -101,6 +121,11 @@ class Board extends React.Component {
     ctx.fill();
     ctx.stroke();
     ctx.restore();
+    //play the sound
+    if (this.currentrotation % 2* Math.PI / this.count === 0)
+    {
+      this.audio.play();
+    }
 
   }
 
@@ -114,10 +139,23 @@ class Board extends React.Component {
   }
 }
 function rotatepie(ctx, board) {
-  board.speed = board.speed < 1000 ? board.speed + 1 : 1000;
-  ctx.rotate(Math.PI / board.speed);
+  
+  board.speed = (board.speed < 1000 && board.startingStopping)? board.speed + Math.floor(Math.random() * 8) + 1  : board.speed;//stopping speed
+  board.roationSpeed =  Math.PI / board.speed;
+  if (board.isStopping && board.speed >= 1000)
+  {
+    board.roationSpeed = 0;
+    if (board.startingStopping){
+    var piOffset = Math.ceil(6.2831 - board.currentrotation / 6.2831 * board.count);
+    var winner =  piOffset >0 ? piOffset: board.count + piOffset;
+    alert(winner);
+    }
+    board.startingStopping = false; //turn off the brakes
+  
+  }
+  ctx.rotate(board.roationSpeed);
+  board.handlerotation();
   board.drawpie();
-  board.handlerotation(Math.PI / board.speed);
 }
 class App extends React.Component {
   constructor(props) {
